@@ -1,18 +1,36 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Bind resources to your worker in `wrangler.toml`. After adding bindings, a type definition for the
- * `Env` object can be regenerated with `npm run cf-typegen`.
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
+import { getBondPrices, getDatabase, updatePage } from './api';
+import { Page, BondRowDTO } from './types';
 
 export default {
-	async fetch(request, env, ctx): Promise<Response> {
-		return new Response('Hello World!');
+	async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext) {
+		const { NOTION_API_KEY, NOTION_DATABASE_ID } = env;
+		await updateBondPrices(NOTION_API_KEY, NOTION_DATABASE_ID);
 	},
-} satisfies ExportedHandler<Env>;
+};
+
+async function updateBondPrices(NOTION_API_KEY: string, NOTION_DATABASE_ID: string) {
+	const data: { results: Page[] } = await getDatabase(NOTION_API_KEY, NOTION_DATABASE_ID);
+	const rows: BondRowDTO[] = data.results.map((page: Page) => {
+		return {
+			id: page.id,
+			title: page.properties['종목명'].title[0].text.content,
+		};
+	});
+	// console.log(rows);
+	const priceMap = new Map(
+		(await getBondPrices()).map((data: string[]) => {
+			return [data[0].trim(), Number.parseFloat(data[7])];
+		})
+	);
+	rows.forEach((row) => {
+		if (priceMap.has(row.title)) {
+			row.price = priceMap.get(row.title);
+		}
+	});
+	for (const row of rows) {
+		console.log(row.title, row.price);
+		await updatePage(NOTION_API_KEY, row.id, {
+			현재가: { number: row.price },
+		});
+	}
+}

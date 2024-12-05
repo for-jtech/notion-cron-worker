@@ -112,3 +112,10 @@ enabled = true
 # [[vectorize]]
 # binding = "MY_INDEX"
 # index_name = "my-index"
+
+[triggers]
+crons = [
+    "30,35,40,45,50,55 0 * * 2-6",
+    "*/5 1-5 * * 2-6",
+    "0,5,10,15 6 * * 2-6",
+]
