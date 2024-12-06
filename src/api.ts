@@ -38,9 +38,9 @@ export async function updatePage(NOTION_API_KEY: string, pageId: string, propert
 					properties,
 				}),
 			});
-			console.log(response.statusText);
+			console.log(response.status, response.statusText);
 			if (!response.ok) {
-				throw new Error(`Failed to update page: ${response.statusText}`);
+				throw new Error(`Failed to update page: ${response.status} ${response.statusText}`);
 			}
 			return await response.json();
 		} catch (e) {

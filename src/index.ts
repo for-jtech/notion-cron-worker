@@ -24,13 +24,13 @@ async function updateBondPrices(NOTION_API_KEY: string, NOTION_DATABASE_ID: stri
 	);
 	rows.forEach((row) => {
 		if (priceMap.has(row.title)) {
-			row.price = priceMap.get(row.title);
+			row.price = priceMap.get(row.title) ?? 0;
 		}
 	});
 	for (const row of rows) {
 		console.log(row.title, row.price);
 		await updatePage(NOTION_API_KEY, row.id, {
-			현재가: { number: row.price },
+			현재가: { number: row.price ?? 0 },
 		});
 	}
 }
